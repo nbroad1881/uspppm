@@ -46,7 +46,6 @@ class USPPPMModel(PreTrainedModel):
         for m in self.classification_head.modules():
             self._init_weights(m)
 
-
     def forward(
         self,
         input_ids=None,
@@ -56,7 +55,9 @@ class USPPPMModel(PreTrainedModel):
         **kwargs
     ):
 
-        token_type_ids = {"token_type_ids": token_type_ids} if token_type_ids is not None else {}
+        token_type_ids = (
+            {"token_type_ids": token_type_ids} if token_type_ids is not None else {}
+        )
         outputs = self.backbone(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -84,9 +85,7 @@ class USPPPMModel(PreTrainedModel):
         else:
             logits = self.classifier(x)
 
-        return SequenceClassifierOutput(
-            loss=loss, logits=x, probas=x.sigmoid()
-        )
+        return SequenceClassifierOutput(loss=loss, logits=x, probas=x.sigmoid())
 
     def _init_weights(self, module):
         std = self.config.to_dict().get("initializer_range", 0.02)
@@ -172,12 +171,14 @@ class BiLSTMHead(nn.Module):
     def __init__(self, embedding_dim, hidden_dim) -> None:
         super().__init__()
 
-        self.bilstm = nn.LSTM(embedding_dim, hidden_dim,
-                            num_layers=1, bidirectional=True)
+        self.bilstm = nn.LSTM(
+            embedding_dim, hidden_dim, num_layers=1, bidirectional=True
+        )
 
     def forward(self, x):
         x, _ = self.bilstm(x)
         return x
+
 
 class CLSHead(nn.Module):
     def __init__(self) -> None:
@@ -185,6 +186,7 @@ class CLSHead(nn.Module):
 
     def forward(self, hidden_states):
         return hidden_states[:, 0, :]
+
 
 class MeanPoolHead(nn.Module):
     def __init__(self) -> None:
