@@ -24,6 +24,7 @@ class USPPPMModel(PreTrainedModel):
         input_hidden_size = config.hidden_size * config.num_concat
 
         if config.meanmax_pooling:
+            input_hidden_size *= 2
             self.classification_head.append(MeanMaxPoolHead())
         elif config.mean_pooling:
             self.classification_head.append(MeanPoolHead())
@@ -40,7 +41,7 @@ class USPPPMModel(PreTrainedModel):
                 )
             )
 
-        self.classifier = nn.Linear(config.hidden_size * config.num_concat, 1)
+        self.classifier = nn.Linear(input_hidden_size, 1)
 
         self._init_weights(self.classifier)
         for mod in self.classification_head:
