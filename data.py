@@ -15,21 +15,21 @@ from transformers import AutoTokenizer
 from datasets import Dataset
 
 
-def get_folds(df, kfolds=5, stratify_on="score", groups="anchor"):
+def get_folds(df, k_folds=5, stratify_on="score", groups="anchor"):
 
     if stratify_on and groups:
-        sgkf = StratifiedGroupKFold(n_splits=kfolds)
+        sgkf = StratifiedGroupKFold(n_splits=k_folds)
         return [
             val_idx
-            for _, val_idx in sgkf.split(df, y=df[stratify_on], groups=df[groups])
+            for _, val_idx in sgkf.split(df, y=df[stratify_on].astype(str), groups=df[groups])
         ]
     elif groups:
-        gkf = GroupKFold(n_splits=kfolds)
+        gkf = GroupKFold(n_splits=k_folds)
         return [val_idx for _, val_idx in gkf.split(df, groups=df[groups])]
     elif stratify_on:
-        skf = StratifiedKFold(n_splits=kfolds)
+        skf = StratifiedKFold(n_splits=k_folds)
         return [val_idx for _, val_idx in skf.split(df, y=df[stratify_on])]
-    kf = KFold(n_splits=kfolds)
+    kf = KFold(n_splits=k_folds)
     return [val_idx for _, val_idx in kf.split(df)]
 
 
@@ -57,7 +57,7 @@ class DataModule:
 
         self.fold_idxs = get_folds(
             self.train_df,
-            kfolds=self.cfg["kfolds"],
+            k_folds=self.cfg["k_folds"],
             stratify_on=self.cfg["stratify_on"],
             groups=self.cfg["fold_groups"],
         )
@@ -121,7 +121,7 @@ class DataModule:
 def get_cpc_details(data_dir):
     contexts = []
     pattern = "[A-Z]\d+"
-    for file_name in os.listdir(data_dir / "cpc-data/CPCSchemeXML202105"):
+    for file_name in os.listdir(data_dir / "CPCSchemeXML202105"):
         result = re.findall(pattern, file_name)
         if result:
             contexts.append(result)
@@ -129,7 +129,7 @@ def get_cpc_details(data_dir):
     results = {}
     for cpc in ["A", "B", "C", "D", "E", "F", "G", "H", "Y"]:
         with open(
-            data_dir / f"cpc-data/CPCTitleList202202/cpc-section-{cpc}_20220201.txt"
+            data_dir / f"CPCTitleList202202/cpc-section-{cpc}_20220201.txt"
         ) as f:
             s = f.read()
         pattern = f"{cpc}\t\t.+"
