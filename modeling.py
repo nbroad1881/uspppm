@@ -1,6 +1,5 @@
-from typing import Optional, Tuple
+from typing import Optional
 from dataclasses import dataclass
-from regex import W
 
 import torch
 from torch import nn
