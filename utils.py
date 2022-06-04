@@ -3,6 +3,8 @@ from typing import List
 
 import torch
 import pandas as pd
+from sklearn.metrics import mean_squared_error
+from scipy.stats import pearsonr
 
 from transformers import (
     get_scheduler,
@@ -22,6 +24,12 @@ def set_wandb_env_vars(cfg):
     os.environ["WANDB_TAGS"] = ",".join(cfg.get("tags", ""))
 
 
+
+def compute_metrics(eval_preds):
+    logits, labels = eval_preds
+    corr, _ = pearsonr(logits.squeeze(), labels) 
+    return {'mse': mean_squared_error(labels, logits), 'pearson': corr}
+    
 def reinit_model_weights(model, n_layers, config):
 
     backbone = model.backbone
