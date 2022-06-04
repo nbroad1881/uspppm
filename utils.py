@@ -1,4 +1,7 @@
 import os
+import re
+import yaml
+from pathlib import Path
 from typing import List
 
 import torch
@@ -14,6 +17,52 @@ import bitsandbytes as bnb
 
 logger = logging.get_logger(__name__)
 
+def fix_e(cfg):
+
+    def fix(value):
+        pattern = r"\d+e\-\d+"
+        if re.search(pattern, value):
+            return eval(value)
+        return value
+
+
+    for k, v in cfg.items():
+        if isinstance(v, dict):
+            for kk, vv in v.items():
+                if isinstance(vv, str):
+                    cfg[k][kk] = fix(vv)
+        elif isinstance(v, str):
+            cfg[k] = fix(v)
+    
+    return cfg
+    
+    
+
+def remove_defaults(cfg):
+    to_remove = []
+    args = cfg["training_arguments"]
+    for key, value in args.items():
+        if value == "<default>":
+            to_remove.append(key)
+    
+    for key in to_remove:
+        del args[key]
+
+def get_configs(filename, filepath="./configs"):
+
+    file = Path(filepath) / filename
+    with open(file) as fp:
+        cfg = yaml.safe_load(fp)
+
+    
+    remove_defaults(cfg)
+    cfg = fix_e(cfg)
+
+    # cfg["training_arguments"]["dataloader_num_workers"] = cfg["num_proc"]
+
+    training_args = cfg.pop("training_arguments")
+    return cfg, training_args
+
 
 def set_wandb_env_vars(cfg):
     os.environ["WANDB_ENTITY"] = cfg.get("entity", "")
@@ -26,9 +75,15 @@ def set_wandb_env_vars(cfg):
 
 
 def compute_metrics(eval_preds):
-    logits, labels = eval_preds
-    corr, _ = pearsonr(logits.squeeze(), labels) 
-    return {'mse': mean_squared_error(labels, logits), 'pearson': corr}
+
+    (logits, probas), labels = eval_preds
+    corr1, _ = pearsonr(logits.squeeze(), labels) 
+    corr2, _ = pearsonr(probas.squeeze(), labels) 
+    
+    return {
+        'logit_mse': mean_squared_error(labels, logits.squeeze()), 'logit_pearson': corr1,
+        'proba_mse': mean_squared_error(labels, probas.squeeze()), 'proba_pearson': corr2,
+    }
     
 def reinit_model_weights(model, n_layers, config):
 
@@ -48,8 +103,6 @@ def reinit_model_weights(model, n_layers, config):
         else:
             encoder_layers = backbone.encoder.layer
             reinit_layers(encoder_layers, n_layers, std)
-
-    reinit_modules([model.output], std)
 
 
 def reinit_layers(layers, n_layers, std):
