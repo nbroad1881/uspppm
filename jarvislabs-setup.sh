@@ -34,7 +34,7 @@ else
     unzip us-patent-phrase-to-phrase-matching.zip -d data
 
     kaggle datasets download -d yasufuminakama/cpc-data
-    unzip yasufuminakama/cpc-data.zip -d data
+    unzip -q cpc-data.zip -d data
 fi
 
 FILE="wandb.txt"
