@@ -1,6 +1,6 @@
 import os
 import datetime
-from argparse import argparse
+import argparse
 
 import wandb
 import torch
@@ -25,6 +25,7 @@ def parse_args():
         required=True,
         help="Config file",
     )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
@@ -51,7 +52,7 @@ if __name__ == "__main__":
 
         # Callbacks
         wb_callback = NewWandbCB(cfg)
-        metric_to_track = "eval_pearson"
+        metric_to_track = "eval_logit_pearson"
         save_callback = SaveCallback(
             min_score_to_save=cfg["min_score_to_save"],
             metric_name=metric_to_track,
@@ -92,6 +93,7 @@ if __name__ == "__main__":
                 "multisample_dropout": cfg["multisample_dropout"],
                 # "layer_norm_eps": cfg["layer_norm_eps"],
                 "run_start": str(datetime.datetime.utcnow()),
+                "output_hidden_states": True,
             }
         )
 
