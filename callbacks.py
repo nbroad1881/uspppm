@@ -1,6 +1,4 @@
 import os
-import shutil
-from collections import deque
 
 import torch
 from transformers import TrainingArguments
