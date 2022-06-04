@@ -14,6 +14,7 @@ class USPPPMModel(PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.config = config
+        
 
         self.backbone = AutoModel.from_config(config)
 
@@ -42,8 +43,9 @@ class USPPPMModel(PreTrainedModel):
         self.classifier = nn.Linear(config.hidden_size * config.num_concat, 1)
 
         self._init_weights(self.classifier)
-        for m in self.classification_head.modules():
-            self._init_weights(m)
+        for mod in self.classification_head:
+            for m in mod.modules():
+                self._init_weights(m)
 
     def forward(
         self,
@@ -53,7 +55,7 @@ class USPPPMModel(PreTrainedModel):
         token_type_ids=None,
         **kwargs
     ):
-
+        
         token_type_ids = (
             {"token_type_ids": token_type_ids} if token_type_ids is not None else {}
         )
@@ -63,6 +65,8 @@ class USPPPMModel(PreTrainedModel):
             **token_type_ids,
             **kwargs
         )
+        
+        
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
@@ -79,12 +83,12 @@ class USPPPMModel(PreTrainedModel):
                 logits = self.classifier(self.dropout(x))
 
             loss_fct = nn.MSELoss()
-            loss = loss_fct(logits.view(-1), labels.view(-1))
+            loss = loss_fct(logits.sigmoid().view(-1), labels.view(-1))
 
         else:
             logits = self.classifier(x)
 
-        return SequenceClassifierOutput(loss=loss, logits=x, probas=x.sigmoid())
+        return SequenceClassifierOutput(loss=loss, logits=logits, probas=logits.sigmoid())
 
     def _init_weights(self, module):
         std = self.config.to_dict().get("initializer_range", 0.02)
@@ -111,7 +115,7 @@ def get_pretrained(config, model_path):
     if model_path.endswith("pytorch_model.bin"):
         model.load_state_dict(torch.load(model_path))
     else:
-        model.backbone = AutoModel.from_pretrained(model_path)
+        model.backbone = AutoModel.from_pretrained(model_path, config=config)
 
     return model
 
@@ -200,7 +204,7 @@ class MaxPoolHead(nn.Module):
         super().__init__()
 
     def forward(self, hidden_states):
-        _, max_pooled = torch.max(hidden_states, 1)
+        max_pooled, _ = torch.max(hidden_states, 1)
         return max_pooled
 
 
@@ -209,7 +213,7 @@ class MeanMaxPoolHead(nn.Module):
         super().__init__()
 
     def forward(self, hidden_states):
-        _, max_pooled = torch.max(hidden_states, 1)
+        max_pooled, _ = torch.max(hidden_states, 1)
         mean_pooled = torch.mean(hidden_states, 1)
 
         return torch.cat([max_pooled, mean_pooled], dim=1)
