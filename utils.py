@@ -76,13 +76,11 @@ def set_wandb_env_vars(cfg):
 
 def compute_metrics(eval_preds):
 
-    (logits, probas), labels = eval_preds
-    corr1, _ = pearsonr(logits.squeeze(), labels) 
-    corr2, _ = pearsonr(probas.squeeze(), labels) 
+    (_, probas), labels = eval_preds
+    corr, _ = pearsonr(probas.squeeze(), labels) 
     
     return {
-        'logit_mse': mean_squared_error(labels, logits.squeeze()), 'logit_pearson': corr1,
-        'proba_mse': mean_squared_error(labels, probas.squeeze()), 'proba_pearson': corr2,
+        'proba_mse': mean_squared_error(labels, probas.squeeze()), 'proba_pearson': corr,
     }
     
 def reinit_model_weights(model, n_layers, config):
