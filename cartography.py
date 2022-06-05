@@ -5,6 +5,7 @@ import argparse
 import datetime
 
 import wandb
+import torch
 import datasets
 import numpy as np
 from tqdm.auto import tqdm
@@ -264,8 +265,6 @@ if __name__ == "__main__":
                 )
                 
 
-                # temp_logits, temp_ids, temp_labels = filter_down(temp_logits, temp_labels, temp_ids)
-
                 train_probas.extend(temp_logits)
                 train_labels.extend(temp_labels)
                 train_ids.extend(temp_ids)
@@ -304,25 +303,29 @@ if __name__ == "__main__":
             model.eval()
             predictions = []
             labels = []
-            for step, batch in enumerate(eval_dataloader):
-                outputs = model(
-                    input_ids=batch["input_ids"],
-                    attention_mask=batch["attention_mask"],
-                    labels=batch["labels"],
-                )
-                bs = batch["input_ids"].size(0)
-                seq_len = batch["input_ids"].size(-1)
+            with torch.no_grad():
+                for step, batch in enumerate(eval_dataloader):
+                    outputs = model(
+                        input_ids=batch["input_ids"],
+                        attention_mask=batch["attention_mask"],
+                        labels=batch["labels"],
+                    )
+                    bs = batch["input_ids"].size(0)
+                    seq_len = batch["input_ids"].size(-1)
 
-                temp = (
-                    outputs["probas"].detach().cpu().numpy().squeeze().tolist()
-                )
-                predictions.extend(temp)
-                labels.extend(batch["labels"].detach().cpu().squeeze().tolist())
+                    temp = (
+                        outputs["probas"].detach().cpu().numpy().squeeze().tolist()
+                    )
+                    predictions.extend(temp)
+                    labels.extend(batch["labels"].detach().cpu().squeeze().tolist())
 
             # predictions = np.vstack(predictions)
             predictions = np.array(predictions)
 
             eval_metrics = compute_metrics(((None, predictions), labels))
+            
+            del predictions, labels
+            gc.collect()
 
             if "wandb" in args.report_to:
                 accelerator.log(
@@ -333,6 +336,12 @@ if __name__ == "__main__":
                         **{f"eval/{k}": v for k, v in eval_metrics.items()},
                     },
                 )
+                
+            torch.cuda.empty_cache()
 
         if "wandb" in args.report_to:
             wandb.finish()
+            
+        del model
+        gc.collect()
+        torch.cuda.empty_cache()
