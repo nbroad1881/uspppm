@@ -66,10 +66,10 @@ class DataModule:
 
         if self.cfg["detailed_cpc"]:
             cpc_texts = get_cpc_details(self.data_dir)
-            self.train_df["context_text"] = self.train_df["context"].map(cpc_texts)
+            self.train_df["context"] = self.train_df["context"].map(cpc_texts)
         else:
             cpc_categories = get_cpc_categories()
-            self.train_df["context_text"] = self.train_df["context"].apply(
+            self.train_df["context"] = self.train_df["context"].apply(
                 lambda x: cpc_categories[x[0]]
             )
 
