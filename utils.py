@@ -220,7 +220,7 @@ def log_training_dynamics(
     output_dir: os.path,
     epoch: int,
     train_ids: List[int],
-    train_logits: List[List[float]],
+    train_probas: List[List[float]],
     train_golds: List[int],
 ):
     """
@@ -229,7 +229,7 @@ def log_training_dynamics(
     """
 
     td_df = pd.DataFrame(
-        {"guid": train_ids, f"logits_epoch_{epoch}": train_logits, "gold": train_golds}
+        {"guid": train_ids, f"logits_epoch_{epoch}": train_probas, "gold": train_golds}
     )
 
     logging_dir = os.path.join(output_dir, f"training_dynamics")
