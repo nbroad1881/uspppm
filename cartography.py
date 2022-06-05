@@ -58,8 +58,9 @@ if __name__ == "__main__":
 
     # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
     # If we're using tracking, we also need to initialize it here and it will pick up all supported trackers in the environment
+    mixed_precision = "fp16" if args["fp16"] else "bf16" if args["bf16"] else "fp32"
     accelerator = Accelerator(
-        log_with=args["report_to"], logging_dir=args["output_dir"]
+        log_with=args["report_to"], logging_dir=args["output_dir"], mixed_precision=mixed_precision,
     )
     # Make one log on every process with the configuration for debugging.
     logging.basicConfig(
@@ -97,18 +98,14 @@ if __name__ == "__main__":
         eval_dataset = datamodule.get_eval_dataset(fold=fold)
 
         train_dataset = train_dataset.map(lambda x: {"length": len(x["input_ids"])})
-        max_len = max(train_dataset["length"])
-        while max_len % 8 != 0:
-            max_len += 1
-        num_examples = len(train_dataset)
+        max_len = 1
 
         eval_dataset = eval_dataset.map(lambda x: {"length": len(x["input_ids"])})
-        max_eval_len = max(eval_dataset["length"])
-        while max_eval_len % 8 != 0:
-            max_eval_len += 1
+        max_eval_len = 1
 
         ds_cols = train_dataset.column_names
-        keep_cols = {"input_ids", "attention_mask", "labels", "idx"}
+        keep_cols = {"input_ids", "attention_mask", "label", "idx"}
+        
 
         data_collator = DataCollatorWithPadding(
             tokenizer=datamodule.tokenizer,
@@ -265,6 +262,7 @@ if __name__ == "__main__":
                     .ravel()
                     .tolist()
                 )
+                
 
                 # temp_logits, temp_ids, temp_labels = filter_down(temp_logits, temp_labels, temp_ids)
 
@@ -305,6 +303,7 @@ if __name__ == "__main__":
 
             model.eval()
             predictions = []
+            labels = []
             for step, batch in enumerate(eval_dataloader):
                 outputs = model(
                     input_ids=batch["input_ids"],
@@ -314,15 +313,16 @@ if __name__ == "__main__":
                 bs = batch["input_ids"].size(0)
                 seq_len = batch["input_ids"].size(-1)
 
-                temp = np.zeros((bs, max_eval_len))
-                temp[:, :seq_len] = (
-                    outputs["probas"].detach().cpu().numpy().squeeze()
+                temp = (
+                    outputs["probas"].detach().cpu().numpy().squeeze().tolist()
                 )
-                predictions.append(temp)
+                predictions.extend(temp)
+                labels.extend(batch["labels"].detach().cpu().squeeze().tolist())
 
-            predictions = np.vstack(predictions)
+            # predictions = np.vstack(predictions)
+            predictions = np.array(predictions)
 
-            eval_metrics = compute_metrics(predictions, eval_dataset)
+            eval_metrics = compute_metrics(((None, predictions), labels))
 
             if "wandb" in args.report_to:
                 accelerator.log(
