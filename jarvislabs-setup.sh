@@ -3,6 +3,7 @@
 cd uspppm
 
 pip install -r requirements.txt
+pip install bitsandbytes-cuda113
 
 git config --global credential.helper store
 
