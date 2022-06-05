@@ -5,6 +5,5 @@ seqeval
 sentencepiece
 kaggle
 wandb
-bitsandbytes-cuda111
 scikit-learn>=1.0.0
 gdown
