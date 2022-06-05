@@ -62,7 +62,7 @@ class DataModule:
             groups=self.cfg["fold_groups"],
         )
 
-    def prepare_datasets(self):
+    def prepare_datasets(self, add_idx=False):
 
         if self.cfg["detailed_cpc"]:
             cpc_texts = get_cpc_details(self.data_dir)
@@ -73,19 +73,31 @@ class DataModule:
                 lambda x: cpc_categories[x[0]]
             )
 
+        id_col = {}
+        if add_idx:
+            self.train_df["idx"] = range(len(self.train_df))
+            self.train_df[["idx", "id"]].to_csv("id2idx.csv", index=False)
+            id_col = {"idx": self.train_df["idx"]}
+
         raw_ds = Dataset.from_dict(
             {
                 "anchor": self.train_df.anchor,
                 "target": self.train_df.target,
                 "label": self.train_df.score,
                 "context": self.train_df.context,
+                **id_col
             }
         )
+
+        remove_columns = raw_ds.column_names
+
+        if add_idx:
+            remove_columns.remove("idx")
 
         self.dataset = raw_ds.map(
             self.tokenize,
             batched=False,
-            remove_columns=raw_ds.column_names,
+            remove_columns=remove_columns,
             num_proc=self.cfg["num_proc"],
         )
 
