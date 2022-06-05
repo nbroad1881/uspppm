@@ -1,5 +1,5 @@
 # RunArguments
-DEBUG: yes
+DEBUG: no
 n_gpu: 1
 num_proc: 7
 
