@@ -14,14 +14,19 @@ class USPPPMModel(PreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
         self.config = config
-        
 
         self.backbone = AutoModel.from_config(config)
 
-        self.dropout = nn.Dropout(config.output_dropout_prob)
-
         self.classification_head = [ConcatHiddenStates(config.num_concat)]
         input_hidden_size = config.hidden_size * config.num_concat
+
+        if config.attention_head:
+            self.classification_head.append(
+                AttentionHead(
+                    input_hidden_size=input_hidden_size,
+                    output_hidden_dim=config.output_hidden_dim,
+                )
+            )
 
         if config.meanmax_pooling:
             input_hidden_size *= 2
@@ -33,20 +38,17 @@ class USPPPMModel(PreTrainedModel):
         else:
             self.classification_head.append(CLSHead())
 
-        if config.attention_head:
-            self.classification_head.append(
-                AttentionHead(
-                    input_hidden_size=input_hidden_size,
-                    output_hidden_dim=config.output_hidden_dim,
-                )
-            )
+        self.classification_head = nn.ModuleList(self.classification_head)
+
+        self.dropout = nn.Dropout(config.output_dropout_prob)
+        if config.multisample_dropout:
+            self.multisample_dropout = [nn.Dropout(p) for p in config.multisample_dropout]
 
         self.classifier = nn.Linear(input_hidden_size, 1)
 
         self._init_weights(self.classifier)
         for mod in self.classification_head:
-            for m in mod.modules():
-                self._init_weights(m)
+            self._init_weights(mod)
 
     def forward(
         self,
@@ -56,7 +58,7 @@ class USPPPMModel(PreTrainedModel):
         token_type_ids=None,
         **kwargs
     ):
-        
+
         token_type_ids = (
             {"token_type_ids": token_type_ids} if token_type_ids is not None else {}
         )
@@ -66,8 +68,6 @@ class USPPPMModel(PreTrainedModel):
             **token_type_ids,
             **kwargs
         )
-        
-        
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
@@ -89,7 +89,9 @@ class USPPPMModel(PreTrainedModel):
         else:
             logits = self.classifier(x)
 
-        return SequenceClassifierOutput(loss=loss, logits=logits, probas=logits.sigmoid())
+        return SequenceClassifierOutput(
+            loss=loss, logits=logits, probas=logits.sigmoid()
+        )
 
     def _init_weights(self, module):
         std = self.config.to_dict().get("initializer_range", 0.02)
