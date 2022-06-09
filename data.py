@@ -130,6 +130,7 @@ class DataModule:
                 + sep
                 + example["context"]
             )
+            prompt = [prompt]
 
         if self.cfg["lowercase"]:
             prompt = [p.lower().replace(sep.lower(), sep) for p in prompt]
