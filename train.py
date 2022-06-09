@@ -94,6 +94,7 @@ if __name__ == "__main__":
                 # "layer_norm_eps": cfg["layer_norm_eps"],
                 "run_start": str(datetime.datetime.utcnow()),
                 "output_hidden_states": True,
+                "output_hidden_dim": cfg["output_hidden_dim"]
             }
         )
 
