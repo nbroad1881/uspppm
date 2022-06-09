@@ -42,7 +42,7 @@ class USPPPMModel(PreTrainedModel):
 
         self.dropout = nn.Dropout(config.output_dropout_prob)
         if config.multisample_dropout:
-            self.multisample_dropout = [nn.Dropout(p) for p in config.multisample_dropout]
+            self.multisample_dropout = MultiSampleDropout(config.multisample_dropout)
 
         self.classifier = nn.Linear(input_hidden_size, 1)
 
