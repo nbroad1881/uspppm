@@ -21,7 +21,9 @@ def get_folds(df, k_folds=5, stratify_on="score", groups="anchor"):
         sgkf = StratifiedGroupKFold(n_splits=k_folds)
         return [
             val_idx
-            for _, val_idx in sgkf.split(df, y=df[stratify_on].astype(str), groups=df[groups])
+            for _, val_idx in sgkf.split(
+                df, y=df[stratify_on].astype(str), groups=df[groups]
+            )
         ]
     elif groups:
         gkf = GroupKFold(n_splits=k_folds)
@@ -85,7 +87,7 @@ class DataModule:
                 "target": self.train_df.target,
                 "label": self.train_df.score,
                 "context": self.train_df.context,
-                **id_col
+                **id_col,
             }
         )
 
@@ -110,22 +112,29 @@ class DataModule:
 
     def tokenize(self, example):
 
+        sep = self.tokenizer.sep_token
+
         if self.cfg["natural_language_prompt"]:
             prompt = f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{example['context']}'"
 
+        elif self.cfg["token_type_prompt"]:
+            prompt = [
+                example["anchor"] + sep + example["context"],
+                example["target"],
+            ]
         else:
             prompt = (
                 example["anchor"]
-                + self.tokenizer.sep_token
+                + sep
                 + example["target"]
-                + self.tokenizer.sep_token
+                + sep
                 + example["context"]
             )
 
         if self.cfg["lowercase"]:
-            prompt = prompt.lower()
+            prompt = [p.lower().replace(sep.lower(), sep) for p in prompt]
 
-        tokenized = self.tokenizer(prompt, padding=False)
+        tokenized = self.tokenizer(*prompt, padding=False)
         tokenized["label"] = example["label"]
         return tokenized
 
@@ -140,9 +149,7 @@ def get_cpc_details(data_dir):
     contexts = sorted(set(list(chain(*contexts))))
     results = {}
     for cpc in ["A", "B", "C", "D", "E", "F", "G", "H", "Y"]:
-        with open(
-            data_dir / f"CPCTitleList202202/cpc-section-{cpc}_20220201.txt"
-        ) as f:
+        with open(data_dir / f"CPCTitleList202202/cpc-section-{cpc}_20220201.txt") as f:
             s = f.read()
         pattern = f"{cpc}\t\t.+"
         result = re.findall(pattern, s)
