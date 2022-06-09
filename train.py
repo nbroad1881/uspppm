@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
         # Callbacks
         wb_callback = NewWandbCB(cfg)
-        metric_to_track = "eval_logit_pearson"
+        metric_to_track = "eval_proba_pearson"
         save_callback = SaveCallback(
             min_score_to_save=cfg["min_score_to_save"],
             metric_name=metric_to_track,
