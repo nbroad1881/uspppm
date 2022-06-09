@@ -48,6 +48,10 @@ class DataModule:
 
         train_df = pd.read_csv(self.data_dir / "train.csv")
 
+        if self.cfg["ignore_data"]:
+            ignore = pd.read_csv(self.data_dir / "ignore.csv")
+            train_df = train_df[~train_df.id.isin(ignore.id)]
+
         self.train_df = train_df.sample(frac=1, random_state=42)
         if self.cfg["DEBUG"]:
             self.train_df = self.train_df.sample(n=1000)
