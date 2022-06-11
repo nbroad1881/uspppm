@@ -14,7 +14,7 @@ from transformers.models.deberta_v2.modeling_deberta_v2 import (
 from transformers.modeling_outputs import MaskedLMOutput
 
 
-class NewDebertaForMaskedLM(DebertaPreTrainedModel):
+class DebertaForMaskedLM(DebertaPreTrainedModel):
     _keys_to_ignore_on_load_unexpected = [r"pooler"]
     _keys_to_ignore_on_load_missing = [r"position_ids", r"predictions.decoder.bias"]
 
@@ -90,7 +90,7 @@ class NewDebertaForMaskedLM(DebertaPreTrainedModel):
             attentions=outputs.attentions,
         )
       
-class NewDebertaV2ForMaskedLM(DebertaV2PreTrainedModel):
+class DebertaV2ForMaskedLM(DebertaV2PreTrainedModel):
 
     def __init__(self, config):
         super().__init__(config)
