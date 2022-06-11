@@ -2,6 +2,7 @@ import os
 import re
 import yaml
 from pathlib import Path
+from dataclasses import dataclass
 from typing import List, Any, Optional, Tuple
 
 import torch
@@ -11,7 +12,8 @@ from scipy.stats import pearsonr
 
 from transformers import (
     get_scheduler,
-    PreTrainedTokenizerBase
+    PreTrainedTokenizerBase,
+    DataCollatorForLanguageModeling
 )
 from transformers.utils import logging
 import bitsandbytes as bnb
