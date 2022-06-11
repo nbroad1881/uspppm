@@ -20,13 +20,6 @@ class USPPPMModel(PreTrainedModel):
         self.classification_head = [ConcatHiddenStates(config.num_concat)]
         input_hidden_size = config.hidden_size * config.num_concat
 
-        if config.attention_head:
-            self.classification_head.append(
-                AttentionHead(
-                    input_hidden_size=input_hidden_size,
-                    output_hidden_dim=config.output_hidden_dim,
-                )
-            )
 
         if config.meanmax_pooling:
             input_hidden_size *= 2
@@ -35,8 +28,16 @@ class USPPPMModel(PreTrainedModel):
             self.classification_head.append(MeanPoolHead())
         elif config.max_pooling:
             self.classification_head.append(MaxPoolHead())
+        elif config.attention_head:
+            self.classification_head.append(
+                AttentionHead(
+                    input_hidden_size=input_hidden_size,
+                    output_hidden_dim=config.output_hidden_dim,
+                )
+            )
         else:
             self.classification_head.append(CLSHead())
+            
 
         self.classification_head = nn.ModuleList(self.classification_head)
 
@@ -68,6 +69,7 @@ class USPPPMModel(PreTrainedModel):
             **token_type_ids,
             **kwargs
         )
+        
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
