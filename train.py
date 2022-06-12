@@ -10,7 +10,14 @@ from transformers.integrations import WandbCallback
 
 
 from callbacks import NewWandbCB, SaveCallback, BasicSWACallback
-from utils import get_configs, set_wandb_env_vars, reinit_model_weights, compute_metrics
+from utils import (
+    get_configs,
+    set_wandb_env_vars,
+    reinit_model_weights,
+    compute_metrics,
+    create_optimizer,
+    create_scheduler,
+)
 from data import DataModule
 from modeling import (
     get_pretrained,
@@ -93,12 +100,25 @@ if __name__ == "__main__":
                 "output_hidden_states": True,
                 "output_hidden_dim": cfg["output_hidden_dim"],
                 "prompt": cfg["prompt"],
+                "loss": cfg["loss"],
             }
         )
 
         model = get_pretrained(model_config, cfg["model_name_or_path"])
 
         reinit_model_weights(model, cfg["reinit_layers"], model_config)
+
+        optimizer = create_optimizer(model, args)
+
+        steps_per_epoch = (
+            len(train_dataset)
+            // args.per_device_train_batch_size
+            // cfg["n_gpu"]
+            // args.gradient_accumulation_steps
+        )
+        num_training_steps = steps_per_epoch * args.num_train_epochs
+
+        scheduler = create_scheduler(num_training_steps, optimizer, args)
 
         trainer = Trainer(
             model=model,
@@ -108,6 +128,7 @@ if __name__ == "__main__":
             compute_metrics=compute_metrics,
             tokenizer=dm.tokenizer,
             callbacks=callbacks,
+            optimizers=(optimizer, scheduler),
         )
 
         trainer.remove_callback(WandbCallback)
@@ -120,7 +141,13 @@ if __name__ == "__main__":
             )
             eval_results = trainer.evaluate()
 
-        trainer.log({f"best_{metric_to_track}": trainer.model.config.to_dict().get(f"best_{metric_to_track}")})
+        trainer.log(
+            {
+                f"best_{metric_to_track}": trainer.model.config.to_dict().get(
+                    f"best_{metric_to_track}"
+                )
+            }
+        )
         model.config.update({"wandb_id": wandb.run.id, "wandb_name": wandb.run.name})
         model.config.save_pretrained(args.output_dir)
 
