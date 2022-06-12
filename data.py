@@ -123,8 +123,8 @@ class DataModule:
 
         elif self.cfg["prompt"] == "token_type":
             prompt = [
-                example["anchor"] + sep + example["context"],
-                example["target"],
+                example["anchor"],
+                example["target"]+ sep + example["context"],
             ]
         else:
             prompt = (
