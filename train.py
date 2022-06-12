@@ -56,7 +56,7 @@ if __name__ == "__main__":
         save_callback = SaveCallback(
             min_score_to_save=cfg["min_score_to_save"],
             metric_name=metric_to_track,
-            weights_only=False,
+            weights_only=True,
         )
 
         callbacks = [wb_callback, save_callback]
@@ -94,7 +94,8 @@ if __name__ == "__main__":
                 # "layer_norm_eps": cfg["layer_norm_eps"],
                 "run_start": str(datetime.datetime.utcnow()),
                 "output_hidden_states": True,
-                "output_hidden_dim": cfg["output_hidden_dim"]
+                "output_hidden_dim": cfg["output_hidden_dim"],
+                "prompt": cfg["prompt"],
             }
         )
 

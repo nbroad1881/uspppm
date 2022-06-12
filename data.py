@@ -118,10 +118,10 @@ class DataModule:
 
         sep = self.tokenizer.sep_token
 
-        if self.cfg["natural_language_prompt"]:
+        if self.cfg["prompt"] == "natural":
             prompt = [f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{example['context']}'"]
 
-        elif self.cfg["token_type_prompt"]:
+        elif self.cfg["prompt"] == "token_type":
             prompt = [
                 example["anchor"] + sep + example["context"],
                 example["target"],
