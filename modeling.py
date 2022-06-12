@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 from dataclasses import dataclass
 
@@ -53,7 +54,6 @@ class USPPPMModel(PreTrainedModel):
             self.classification_head.append(
                 AttentionHead(
                     input_hidden_size=input_hidden_size,
-                    output_hidden_dim=config.output_hidden_dim,
                 )
             )
         else:
@@ -73,6 +73,11 @@ class USPPPMModel(PreTrainedModel):
         self._init_weights(self.classifier)
         for mod in self.classification_head:
             self._init_weights(mod)
+
+        if config.loss == "mse":
+            self.loss_fct = nn.MSELoss()
+        elif config.loss == "bce":
+            self.loss_fct = nn.BCEWithLogitsLoss()
 
     def forward(
         self,
@@ -97,6 +102,7 @@ class USPPPMModel(PreTrainedModel):
             if i == 0:
                 x = mod(outputs.hidden_states)
             else:
+
                 x = mod(x)
 
         loss = None
@@ -112,8 +118,10 @@ class USPPPMModel(PreTrainedModel):
             else:
                 logits = self.classifier(x)
 
-            loss_fct = nn.MSELoss()
-            loss = loss_fct(logits.sigmoid().view(-1), labels.view(-1))
+            if self.config.loss == "mse":
+                loss = self.loss_fct(logits.sigmoid().view(-1), labels.view(-1))
+            elif self.config.loss == "bce":
+                loss = self.loss_fct(logits.view(-1), labels.view(-1))
 
         else:
             if self.config.output_layer_norm:
@@ -150,7 +158,11 @@ def get_pretrained(config, model_path):
     if model_path.endswith("pytorch_model.bin"):
         model.load_state_dict(torch.load(model_path))
     else:
-        model.backbone = AutoModel.from_pretrained(model_path, config=config)
+        model.backbone = AutoModel.from_pretrained(
+            model_path,
+            config=config,
+            use_auth_token=os.environ.get("HUGGINGFACE_HUB_TOKEN", True),
+        )
 
     return model
 
@@ -167,19 +179,21 @@ class AttentionHead(nn.Module):
     """
     Weights the hidden states.
     Maybe from this: https://www.kaggle.com/code/maunish/clrp-roberta-svm?scriptVersionId=65180276&cellId=6
+    https://www.kaggle.com/competitions/us-patent-phrase-to-phrase-matching/discussion/324330#1793635
     """
 
-    def __init__(self, input_hidden_size, output_hidden_dim) -> None:
+    def __init__(self, input_hidden_size) -> None:
         super().__init__()
-        self.linear1 = nn.Linear(input_hidden_size, output_hidden_dim)
-        self.act_fn = nn.Tanh()
-        self.linear2 = nn.Linear(output_hidden_dim, 1)
-        self.softmax = nn.Softmax(dim=1)
+        self.attention = nn.Sequential(
+            nn.Linear(input_hidden_size, input_hidden_size),
+            nn.LayerNorm(input_hidden_size),
+            nn.GELU(),
+            nn.Linear(input_hidden_size, 1),
+        )
 
-    def forward(self, hidden_states):
-        x = self.linear1(hidden_states)
-        x = self.act_fn(x)
-        x = self.linear2(x)
+    def forward(self, hidden_states, attention_mask, **kwargs):
+        x = self.attention(hidden_states)
+        x[attention_mask == 0] = float("-inf")
         weights = self.softmax(x)
 
         out = torch.sum(weights * hidden_states, dim=1)
@@ -197,7 +211,7 @@ class ConcatHiddenStates(nn.Module):
 
         self.num_concat = num_concat
 
-    def forward(self, all_hidden_states):
+    def forward(self, all_hidden_states, **kwargs):
         return torch.cat([hs for hs in all_hidden_states[-self.num_concat :]], dim=-1)
 
 
@@ -222,7 +236,7 @@ class CLSHead(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, hidden_states):
+    def forward(self, hidden_states, **kwargs):
         return hidden_states[:, 0, :]
 
 
@@ -230,15 +244,19 @@ class MeanPoolHead(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, hidden_states):
-        return torch.mean(hidden_states, 1)
+    def forward(self, hidden_states, attention_mask, **kwargs):
+        x = hidden_states
+        mask = attention_mask.unsqueeze(-1).expand(x.size())
+        x = torch.sum(x * mask, 1)
+        x = x / (mask.sum(1) + 1e-8)
+        return x
 
 
 class MaxPoolHead(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, hidden_states):
+    def forward(self, hidden_states, **kwargs):
         max_pooled, _ = torch.max(hidden_states, 1)
         return max_pooled
 
@@ -246,10 +264,12 @@ class MaxPoolHead(nn.Module):
 class MeanMaxPoolHead(nn.Module):
     def __init__(self) -> None:
         super().__init__()
+        self.max = MaxPoolHead()
+        self.mean = MeanPoolHead()
 
-    def forward(self, hidden_states):
-        max_pooled, _ = torch.max(hidden_states, 1)
-        mean_pooled = torch.mean(hidden_states, 1)
+    def forward(self, hidden_states, **kwargs):
+        max_pooled = self.max(hidden_states)
+        mean_pooled = self.mean(hidden_states, **kwargs)
 
         return torch.cat([max_pooled, mean_pooled], dim=1)
 
