@@ -65,6 +65,9 @@ class USPPPMModel(PreTrainedModel):
         if config.multisample_dropout:
             self.multisample_dropout = MultiSampleDropout(config.multisample_dropout)
 
+        if config.output_layer_norm:
+            self.ln = nn.LayerNorm(config.hidden_size)
+
         self.classifier = nn.Linear(input_hidden_size, 1)
 
         self._init_weights(self.classifier)
@@ -100,15 +103,23 @@ class USPPPMModel(PreTrainedModel):
         if labels is not None:
 
             if self.config.multisample_dropout:
-                logits = self.classifier(self.multisample_dropout(x))
+                x = self.multisample_dropout(x)
             else:
-                logits = self.classifier(self.dropout(x))
+                x = self.dropout(x)
+
+            if self.config.output_layer_norm:
+                logits = self.classifier(self.ln(x))
+            else:
+                logits = self.classifier(x)
 
             loss_fct = nn.MSELoss()
             loss = loss_fct(logits.sigmoid().view(-1), labels.view(-1))
 
         else:
-            logits = self.classifier(x)
+            if self.config.output_layer_norm:
+                logits = self.classifier(self.ln(x))
+            else:
+                logits = self.classifier(x)
 
         return SequenceClassifierOutput(
             loss=loss, logits=logits, probas=logits.sigmoid()
