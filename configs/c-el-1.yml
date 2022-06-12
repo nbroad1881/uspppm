@@ -26,14 +26,14 @@ prompt: "natural"
 ignore_data: no
 
 # model
-model_name_or_path: "microsoft/deberta-v3-base"
+model_name_or_path: "google/electra-large-discriminator"
 reinit_layers: 0
 layer_norm_eps: 1e-7
 dropout: 0.1
 num_concat: 1
 meanmax_pooling: no
-mean_pooling: yes
-max_pooling: no
+mean_pooling: no
+max_pooling: yes
 attention_head: no
 multisample_dropout: 
   - 0.5

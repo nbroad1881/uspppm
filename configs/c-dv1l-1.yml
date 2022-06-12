@@ -26,7 +26,7 @@ prompt: "natural"
 ignore_data: no
 
 # model
-model_name_or_path: "microsoft/deberta-v3-base"
+model_name_or_path: "microsoft/deberta-large"
 reinit_layers: 0
 layer_norm_eps: 1e-7
 dropout: 0.1
