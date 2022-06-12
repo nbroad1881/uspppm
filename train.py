@@ -101,6 +101,7 @@ if __name__ == "__main__":
                 "output_hidden_dim": cfg["output_hidden_dim"],
                 "prompt": cfg["prompt"],
                 "loss": cfg["loss"],
+                "output_layer_norm": cfg["output_layer_norm"],
             }
         )
 
