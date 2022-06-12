@@ -100,10 +100,9 @@ class USPPPMModel(PreTrainedModel):
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
-                x = mod(outputs.hidden_states)
+                x = mod(outputs.hidden_states, attention_mask=attention_mask)
             else:
-
-                x = mod(x)
+                x = mod(x, attention_mask=attention_mask)
 
         loss = None
         if labels is not None:
