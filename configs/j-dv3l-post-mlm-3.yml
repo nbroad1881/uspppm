@@ -5,7 +5,7 @@ num_proc: 7
 
 
 min_score_to_save: 0.82
-loss: 'mse'
+loss: 'bce'
 use_8bit: yes
 use_layerwise_lr: no
 layer_lr_alpha: 0.8
@@ -33,6 +33,14 @@ dropout: 0.2
 num_concat: 1
 pooling: "mean"
 multisample_dropout: 
+  - 0.5
+  - 0.5
+  - 0.5
+  - 0.5
+  - 0.5
+  - 0.5
+  - 0.5
+  - 0.5
 output_hidden_dim: 512
 
 # swa
@@ -76,13 +84,13 @@ training_arguments:
   gradient_accumulation_steps: 1
   gradient_checkpointing: no
   group_by_length: no
-  learning_rate: 6e-6
+  learning_rate: 9e-6
   weight_decay: .01
 
 # schedule + steps
   num_train_epochs: 5
   lr_scheduler_type: linear
-  warmup_ratio: 0.1
+  warmup_ratio: 0
   warmup_steps: 0
   max_steps: -1
 
@@ -90,7 +98,7 @@ training_arguments:
   adam_beta1: 0.9
   adam_beta2: 0.999
   adam_epsilon: 1e-6
-  max_grad_norm: 1.0
+  max_grad_norm: 10.0
   optim: 'adamw_torch'
   adafactor: no
 
