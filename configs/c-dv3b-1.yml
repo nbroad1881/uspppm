@@ -1,10 +1,10 @@
 # RunArguments
-DEBUG: yes
+DEBUG: no
 n_gpu: 1
 num_proc: 4
 
 
-min_score_to_save: 0.82
+min_score_to_save: 0.80
 loss: 'mse'
 use_8bit: yes
 use_layerwise_lr: no
@@ -44,6 +44,7 @@ multisample_dropout:
   - 0.5
   - 0.5
   - 0.5
+output_hidden_dim: 512
 
 # swa
 use_swa: no
@@ -139,7 +140,7 @@ training_arguments:
   do_predict:
   
 # hub
-  push_to_hub: no
+  push_to_hub: yes
   hub_model_id:
   hub_strategy: "every_save"
   hub_token:
