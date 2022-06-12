@@ -5,12 +5,34 @@ import torch
 from torch import nn
 from transformers import (
     PreTrainedModel,
+    PretrainedConfig,
     AutoModel,
 )
 from transformers.utils import ModelOutput
 
 
+class USPPPMConfig(PretrainedConfig):
+    model_type = "uspppm"
+
+    def __init__(
+        self,
+        prompt: str = "natural",
+        num_concat: int = 1,
+        pooling: str = "cls",
+        output_hidden_dim: int = 512,
+        **kwargs,
+    ):
+        self.prompt = prompt
+        self.num_concat = num_concat
+        self.pooling = pooling
+        self.output_hidden_dim = output_hidden_dim
+        super().__init__(**kwargs)
+
+
 class USPPPMModel(PreTrainedModel):
+
+    config_class = USPPPMConfig
+
     def __init__(self, config):
         super().__init__(config)
         self.config = config
@@ -20,15 +42,14 @@ class USPPPMModel(PreTrainedModel):
         self.classification_head = [ConcatHiddenStates(config.num_concat)]
         input_hidden_size = config.hidden_size * config.num_concat
 
-
-        if config.meanmax_pooling:
+        if config.pooling == "meanmax":
             input_hidden_size *= 2
             self.classification_head.append(MeanMaxPoolHead())
-        elif config.mean_pooling:
+        elif config.pooling == "mean":
             self.classification_head.append(MeanPoolHead())
-        elif config.max_pooling:
+        elif config.pooling == "max":
             self.classification_head.append(MaxPoolHead())
-        elif config.attention_head:
+        elif config.pooling == "attn":
             self.classification_head.append(
                 AttentionHead(
                     input_hidden_size=input_hidden_size,
@@ -37,7 +58,6 @@ class USPPPMModel(PreTrainedModel):
             )
         else:
             self.classification_head.append(CLSHead())
-            
 
         self.classification_head = nn.ModuleList(self.classification_head)
 
@@ -57,7 +77,7 @@ class USPPPMModel(PreTrainedModel):
         attention_mask=None,
         labels=None,
         token_type_ids=None,
-        **kwargs
+        **kwargs,
     ):
 
         token_type_ids = (
@@ -67,9 +87,8 @@ class USPPPMModel(PreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             **token_type_ids,
-            **kwargs
+            **kwargs,
         )
-        
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
