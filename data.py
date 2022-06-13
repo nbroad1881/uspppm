@@ -54,9 +54,9 @@ class DataModule:
             ignore = pd.read_csv(self.data_dir / "ignore.csv")
             train_df = train_df[~train_df.id.isin(ignore.id)]
 
-        self.train_df = train_df.sample(frac=1, random_state=42)
+        self.train_df = train_df.sample(frac=1, random_state=42, ignore_index=True)
         if self.cfg["DEBUG"]:
-            self.train_df = self.train_df.sample(n=1000)
+            self.train_df = self.train_df.sample(n=1000, ignore_index=True)
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.cfg["model_name_or_path"],
