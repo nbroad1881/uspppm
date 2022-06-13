@@ -193,25 +193,25 @@ def uniform_learning_rate(model, lr, wd=0.01):
         {
             "params": [
                 p
-                for n, p in model.named_parameters()
+                for n, p in model.backbone.named_parameters()
                 if not any(nd in n for nd in no_decay)
             ],
             "weight_decay": wd,
-            "lr": lr,
+            "lr": lr*.8,
         },
         {
             "params": [
                 p
-                for n, p in model.named_parameters()
+                for n, p in model.backbone.named_parameters()
                 if any(nd in n for nd in no_decay)
             ],
             "weight_decay": 0.0,
-            "lr": lr,
+            "lr": lr*.8,
         },
         {
             "params": [p for n, p in model.named_parameters() if "backbone" not in n],
             "weight_decay": 0.0,
-            "lr": lr * 2,
+            "lr": lr * 1.2,
         },
     ]
 
