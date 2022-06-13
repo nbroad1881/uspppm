@@ -5,7 +5,7 @@ num_proc: 4
 
 
 min_score_to_save: 0.80
-loss: 'mse'
+loss: 'bce'
 use_8bit: yes
 use_layerwise_lr: no
 layer_lr_alpha: 0.8
@@ -22,26 +22,18 @@ lowercase: yes
 stratify_on: "score"
 fold_groups: "anchor"
 detailed_cpc: yes
-prompt: "natural"
+prompt: "token_type"
 ignore_data: no
 train_file: "seed3.csv"
 
 # model
-model_name_or_path: "microsoft/deberta-large"
+model_name_or_path: "google/electra-large-discriminator"
 reinit_layers: 0
 layer_norm_eps: 1e-7
-dropout: 0.1
+dropout: 0.2
 num_concat: 1
-pooling: "attn"
+pooling: "mean"
 multisample_dropout: 
-  - 0.5
-  - 0.5
-  - 0.5
-  - 0.5
-  - 0.5
-  - 0.5
-  - 0.5
-  - 0.5
 output_hidden_dim: 512
 output_layer_norm: yes
 
@@ -90,10 +82,10 @@ training_arguments:
   weight_decay: .01
 
 # schedule + steps
-  num_train_epochs: 5
+  num_train_epochs: 4
   lr_scheduler_type: cosine
-  warmup_ratio: 0.1
-  warmup_steps: 0
+  warmup_ratio: 0
+  warmup_steps: 100
   max_steps: -1
 
 # optimizer
