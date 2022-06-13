@@ -101,6 +101,7 @@ class DataModule:
                 "target": self.train_df.target,
                 "label": self.train_df.score,
                 "context": self.train_df.context,
+                "fold": self.train_df.fold,
                 **id_col,
             }
         )
