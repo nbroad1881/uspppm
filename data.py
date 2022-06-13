@@ -48,6 +48,8 @@ class DataModule:
 
         train_df = pd.read_csv(self.data_dir / self.cfg["train_file"])
 
+        train_df["context"] = train_df["title"]
+
         if self.cfg["ignore_data"]:
             ignore = pd.read_csv(self.data_dir / "ignore.csv")
             train_df = train_df[~train_df.id.isin(ignore.id)]
