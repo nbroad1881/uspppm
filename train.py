@@ -153,7 +153,11 @@ if __name__ == "__main__":
         model.config.save_pretrained(args.output_dir)
 
         if args.push_to_hub:
-            trainer.push_to_hub()
+            if "COLAB_GPU" in os.environ:
+                import subprocess
+                subprocess.run(f"cd {args.output_dir} && git push")
+            else:
+                trainer.push_to_hub()
 
         wandb.finish()
 
