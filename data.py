@@ -78,7 +78,9 @@ class DataModule:
 
     def prepare_datasets(self, add_idx=False):
 
-        if self.cfg["detailed_cpc"]:
+        if self.cfg["train_file"]:
+            pass
+        elif self.cfg["detailed_cpc"]:
             cpc_texts = get_cpc_details(self.data_dir)
             self.train_df["context"] = self.train_df["context"].map(cpc_texts)
         else:
