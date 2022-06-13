@@ -67,6 +67,7 @@ class USPPPMModel(PreTrainedModel):
 
         if config.output_layer_norm:
             self.ln = nn.LayerNorm(config.hidden_size)
+            self._init_weights(self.ln)
 
         self.classifier = nn.Linear(input_hidden_size, 1)
 
@@ -193,7 +194,7 @@ class AttentionHead(nn.Module):
     def forward(self, hidden_states, attention_mask, **kwargs):
         x = self.attention(hidden_states)
         x[attention_mask == 0] = float("-inf")
-        weights = self.softmax(x)
+        weights = torch.softmax(x, 1)
 
         out = torch.sum(weights * hidden_states, dim=1)
 
