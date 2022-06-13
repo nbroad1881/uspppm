@@ -13,21 +13,20 @@ from scipy.stats import pearsonr
 from transformers import (
     get_scheduler,
     PreTrainedTokenizerBase,
-    DataCollatorForLanguageModeling
+    DataCollatorForLanguageModeling,
 )
 from transformers.utils import logging
 import bitsandbytes as bnb
 
 logger = logging.get_logger(__name__)
 
-def fix_e(cfg):
 
+def fix_e(cfg):
     def fix(value):
         pattern = r"\d+e\-\d+"
         if re.search(pattern, value):
             return eval(value)
         return value
-
 
     for k, v in cfg.items():
         if isinstance(v, dict):
@@ -36,10 +35,9 @@ def fix_e(cfg):
                     cfg[k][kk] = fix(vv)
         elif isinstance(v, str):
             cfg[k] = fix(v)
-    
+
     return cfg
-    
-    
+
 
 def remove_defaults(cfg):
     to_remove = []
@@ -47,9 +45,10 @@ def remove_defaults(cfg):
     for key, value in args.items():
         if value == "<default>":
             to_remove.append(key)
-    
+
     for key in to_remove:
         del args[key]
+
 
 def get_configs(filename, filepath="./configs"):
 
@@ -57,7 +56,6 @@ def get_configs(filename, filepath="./configs"):
     with open(file) as fp:
         cfg = yaml.safe_load(fp)
 
-    
     remove_defaults(cfg)
     cfg = fix_e(cfg)
 
@@ -76,16 +74,17 @@ def set_wandb_env_vars(cfg):
     os.environ["WANDB_TAGS"] = ",".join(cfg.get("tags", ""))
 
 
-
 def compute_metrics(eval_preds):
 
     (_, probas), labels = eval_preds
-    corr, _ = pearsonr(probas.squeeze(), labels) 
-    
+    corr, _ = pearsonr(probas.squeeze(), labels)
+
     return {
-        'proba_mse': mean_squared_error(labels, probas.squeeze()), 'proba_pearson': corr,
+        "proba_mse": mean_squared_error(labels, probas.squeeze()),
+        "proba_pearson": corr,
     }
-    
+
+
 def reinit_model_weights(model, n_layers, config):
 
     backbone = model.backbone
@@ -208,6 +207,11 @@ def uniform_learning_rate(model, lr, wd=0.01):
             ],
             "weight_decay": 0.0,
             "lr": lr,
+        },
+        {
+            "params": [p for n, p in model.named_parameters() if "backbone" not in n],
+            "weight_decay": 0.0,
+            "lr": lr * 2,
         },
     ]
 
