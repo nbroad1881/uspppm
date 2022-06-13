@@ -95,7 +95,7 @@ class DataModule:
             self.train_df[["idx", "id"]].to_csv("id2idx.csv", index=False)
             id_col = {"idx": self.train_df["idx"]}
 
-        raw_ds = Dataset.from_dict(
+        self.raw_ds = Dataset.from_dict(
             {
                 "anchor": self.train_df.anchor,
                 "target": self.train_df.target,
@@ -105,12 +105,12 @@ class DataModule:
             }
         )
 
-        remove_columns = raw_ds.column_names
+        remove_columns = self.raw_ds.column_names
 
         if add_idx:
             remove_columns.remove("idx")
 
-        self.dataset = raw_ds.map(
+        self.dataset = self.raw_ds.map(
             self.tokenize,
             batched=False,
             remove_columns=remove_columns,
@@ -122,7 +122,10 @@ class DataModule:
         return self.dataset.select(idxs)
 
     def get_eval_dataset(self, fold):
-        return self.dataset.select(self.fold_idxs[fold])
+        idxs = self.fold_idxs[fold]
+        print("Unique eval fold values:", self.raw_ds.select(idxs).unique("fold"))
+        return self.dataset.select(idxs)
+
 
     def tokenize(self, example):
 
