@@ -46,7 +46,7 @@ class DataModule:
 
         self.data_dir = Path(self.cfg["data_dir"])
 
-        train_df = pd.read_csv(self.data_dir / "train.csv")
+        train_df = pd.read_csv(self.data_dir / self.cfg["train_file"])
 
         if self.cfg["ignore_data"]:
             ignore = pd.read_csv(self.data_dir / "ignore.csv")
@@ -61,12 +61,18 @@ class DataModule:
             use_auth_token=os.environ.get("HUGGINGFACE_HUB_TOKEN", True),
         )
 
-        self.fold_idxs = get_folds(
-            self.train_df,
-            k_folds=self.cfg["k_folds"],
-            stratify_on=self.cfg["stratify_on"],
-            groups=self.cfg["fold_groups"],
-        )
+        if "fold" not in self.train_df:
+            self.fold_idxs = get_folds(
+                self.train_df,
+                k_folds=self.cfg["k_folds"],
+                stratify_on=self.cfg["stratify_on"],
+                groups=self.cfg["fold_groups"],
+            )
+        else:
+            self.fold_idxs = [
+                self.train_df[self.train_df.fold == f].index.tolist()
+                for f in range(self.train_df.fold.max()+1)
+            ]
 
     def prepare_datasets(self, add_idx=False):
 
@@ -119,20 +125,18 @@ class DataModule:
         sep = self.tokenizer.sep_token
 
         if self.cfg["prompt"] == "natural":
-            prompt = [f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{example['context']}'"]
+            prompt = [
+                f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{example['context']}'"
+            ]
 
         elif self.cfg["prompt"] == "token_type":
             prompt = [
                 example["anchor"],
-                example["target"]+ sep + example["context"],
+                example["target"] + sep + example["context"],
             ]
         else:
             prompt = (
-                example["anchor"]
-                + sep
-                + example["target"]
-                + sep
-                + example["context"]
+                example["anchor"] + sep + example["target"] + sep + example["context"]
             )
             prompt = [prompt]
 
