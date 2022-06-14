@@ -49,7 +49,7 @@ class DataModule:
         train_df = pd.read_csv(self.data_dir / self.cfg["train_file"])
 
         train_df["context"] = train_df["title"]
-        train_df["section"] = train_df["section"].apply(lambda x: f"[{x[0]}]")
+        train_df["section"] = train_df["context"].apply(lambda x: f"[{x[0]}]")
 
         if self.cfg["ignore_data"]:
             ignore = pd.read_csv(self.data_dir / "ignore.csv")

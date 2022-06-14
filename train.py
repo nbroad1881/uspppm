@@ -49,7 +49,8 @@ if __name__ == "__main__":
 
     dm.prepare_datasets()
 
-    for fold in range(cfg["k_folds"]):
+    for fold in [1, 2, 4]:
+    # range(cfg["k_folds"]):
 
         cfg, args = get_configs(config_file)
         cfg["fold"] = fold
@@ -106,7 +107,7 @@ if __name__ == "__main__":
         )
 
         model = get_pretrained(model_config, cfg["model_name_or_path"])
-        model.resize_token_embeddings(len(dm.tokenizer))
+        model.backbone.resize_token_embeddings(len(dm.tokenizer))
 
         reinit_model_weights(model, cfg["reinit_layers"], model_config)
 
