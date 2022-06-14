@@ -14,6 +14,8 @@ from sklearn.model_selection import (
 from transformers import AutoTokenizer
 from datasets import Dataset
 
+from cocolm.tokenization_cocolm import COCOLMTokenizer
+
 
 def get_folds(df, k_folds=5, stratify_on="score", groups="anchor"):
 
@@ -59,7 +61,12 @@ class DataModule:
         if self.cfg["DEBUG"]:
             self.train_df = self.train_df.sample(n=1000, ignore_index=True)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
+        if "cocolm" in self.cfg["model_name_or_path"]:
+            tok_class = COCOLMTokenizer
+        else:
+            tok_class = AutoTokenizer
+        
+        self.tokenizer = tok_class.from_pretrained(
             self.cfg["model_name_or_path"],
             use_auth_token=os.environ.get("HUGGINGFACE_HUB_TOKEN", True),
         )

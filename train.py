@@ -23,6 +23,8 @@ from modeling import (
     get_pretrained,
 )
 
+from cocolm.configuration_cocolm import COCOLMConfig
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Fine-tune on USPPPM dataset")
@@ -84,7 +86,12 @@ if __name__ == "__main__":
             dm.tokenizer.decode(train_dataset[0]["input_ids"]),
         )
 
-        model_config = AutoConfig.from_pretrained(
+        if "cocolm" in cfg["model_name_or_path"]:
+            cfg_class = COCOLMConfig
+        else:
+            cfg_class = AutoConfig
+
+        model_config = cfg_class.from_pretrained(
             cfg["model_name_or_path"],
             use_auth_token=os.environ.get("HUGGINGFACE_HUB_TOKEN", True),
         )

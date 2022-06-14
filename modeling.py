@@ -10,6 +10,7 @@ from transformers import (
     AutoModel,
 )
 from transformers.utils import ModelOutput
+from cocolm.modeling_cocolm import COCOLMModel
 
 
 class USPPPMConfig(PretrainedConfig):
@@ -157,6 +158,12 @@ def get_pretrained(config, model_path):
 
     if model_path.endswith("pytorch_model.bin"):
         model.load_state_dict(torch.load(model_path))
+    elif "cocolm" in model_path:
+        model.backbone = COCOLMModel.from_pretrained(
+            model_path,
+            config=config,
+            use_auth_token=os.environ.get("HUGGINGFACE_HUB_TOKEN", True),
+        )
     else:
         model.backbone = AutoModel.from_pretrained(
             model_path,
