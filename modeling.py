@@ -10,6 +10,7 @@ from transformers import (
     AutoModel,
 )
 from transformers.utils import ModelOutput
+from cocolm.modeling_cocolm import COCOLMModel
 
 
 class USPPPMConfig(PretrainedConfig):
@@ -38,7 +39,10 @@ class USPPPMModel(PreTrainedModel):
         super().__init__(config)
         self.config = config
 
-        self.backbone = AutoModel.from_config(config)
+        if "COCO" in str(config.__class__):
+            self.backbone = COCOLMModel(config)
+        else:
+            self.backbone = AutoModel.from_config(config)
 
         self.classification_head = [ConcatHiddenStates(config.num_concat)]
         input_hidden_size = config.hidden_size * config.num_concat
@@ -101,7 +105,11 @@ class USPPPMModel(PreTrainedModel):
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
-                x = mod(outputs.hidden_states, attention_mask=attention_mask)
+                if "COCO" in str(self.config.__class__):
+                    hs = outputs[1]
+                else:
+                    hs = outputs.hidden_states
+                x = mod(hs, attention_mask=attention_mask)
             else:
                 x = mod(x, attention_mask=attention_mask)
 
@@ -157,6 +165,12 @@ def get_pretrained(config, model_path):
 
     if model_path.endswith("pytorch_model.bin"):
         model.load_state_dict(torch.load(model_path))
+    elif "cocolm" in model_path:
+        model.backbone = COCOLMModel.from_pretrained(
+            model_path,
+            config=config,
+            use_auth_token=os.environ.get("HUGGINGFACE_HUB_TOKEN", True),
+        )
     else:
         model.backbone = AutoModel.from_pretrained(
             model_path,
