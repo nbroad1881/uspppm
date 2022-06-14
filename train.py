@@ -17,6 +17,7 @@ from utils import (
     compute_metrics,
     create_optimizer,
     create_scheduler,
+    push_to_hub,
 )
 from data import DataModule
 from modeling import (
@@ -157,11 +158,7 @@ if __name__ == "__main__":
         model.config.save_pretrained(args.output_dir)
 
         if args.push_to_hub:
-            if "COLAB_GPU" in os.environ:
-                import subprocess
-                subprocess.run(f"cd {args.output_dir} && git push")
-            else:
-                trainer.push_to_hub()
+            push_to_hub(trainer)
 
         wandb.finish()
 

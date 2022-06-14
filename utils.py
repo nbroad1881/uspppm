@@ -332,3 +332,51 @@ class OnlyMaskingCollator(DataCollatorForLanguageModeling):
 
         # The rest of the time (10% of the time) we keep the masked input tokens unchanged
         return inputs, labels
+
+def push_to_hub(trainer, commit_message: Optional[str] = "End of training", blocking: bool = True, **kwargs) -> str:
+    """
+    Upload *self.model* and *self.tokenizer* to the 🤗 model hub on the repo *self.args.hub_model_id*.
+    Parameters:
+        commit_message (`str`, *optional*, defaults to `"End of training"`):
+            Message to commit while pushing.
+        blocking (`bool`, *optional*, defaults to `True`):
+            Whether the function should return only when the `git push` has finished.
+        kwargs:
+            Additional keyword arguments passed along to [`~Trainer.create_model_card`].
+    Returns:
+        The url of the commit of your model in the given repository if `blocking=False`, a tuple with the url of
+        the commit and an object to track the progress of the commit if `blocking=True`
+    """
+    # If a user calls manually `push_to_hub` with `self.args.push_to_hub = False`, we try to create the repo but
+    # it might fail.
+    if not hasattr(trainer, "repo"):
+        trainer.init_git_repo()
+
+    # Only push from one node.
+    if not trainer.is_world_process_zero():
+        return
+    
+    if trainer.args.hub_model_id is None:
+        model_name = Path(trainer.args.output_dir).name
+    else:
+        model_name = trainer.args.hub_model_id.split("/")[-1]
+
+    # Cancel any async push in progress if blocking=True. The commits will all be pushed together.
+    if blocking and trainer.push_in_progress is not None and not trainer.push_in_progress.is_done:
+        trainer.push_in_progress._process.kill()
+        trainer.push_in_progress = None
+
+    git_head_commit_url = trainer.repo.push_to_hub(
+        commit_message=commit_message, blocking=blocking, auto_lfs_prune=True
+    )
+    # push separately the model card to be independant from the rest of the model
+    if trainer.args.should_save:
+        trainer.create_model_card(model_name=model_name, **kwargs)
+        try:
+            trainer.repo.push_to_hub(
+                commit_message="update model card README.md", blocking=blocking, auto_lfs_prune=True
+            )
+        except EnvironmentError as exc:
+            print(f"Error pushing update to the model card. Please read logs and retry.\n${exc}")
+
+    return git_head_commit_url
