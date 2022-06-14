@@ -4,7 +4,7 @@ import argparse
 
 import wandb
 import torch
-from transformers import Trainer, TrainingArguments, AutoConfig
+from transformers import Trainer, TrainingArguments, AutoConfig, DataCollatorWithPadding
 from transformers.trainer_utils import set_seed
 from transformers.integrations import WandbCallback
 
@@ -49,8 +49,7 @@ if __name__ == "__main__":
 
     dm.prepare_datasets()
 
-    for fold in [1, 2, 4]:
-    # range(cfg["k_folds"]):
+    for fold in range(1, cfg["k_folds"]):
 
         cfg, args = get_configs(config_file)
         cfg["fold"] = fold
@@ -123,6 +122,8 @@ if __name__ == "__main__":
 
         scheduler = create_scheduler(num_training_steps, optimizer, args)
 
+        collator = DataCollatorWithPadding(tokenizer=dm.tokenizer, pad_to_multiple_of=8)
+
         trainer = Trainer(
             model=model,
             args=args,
@@ -131,6 +132,7 @@ if __name__ == "__main__":
             compute_metrics=compute_metrics,
             tokenizer=dm.tokenizer,
             callbacks=callbacks,
+            data_collator=collator,
             optimizers=(optimizer, scheduler),
         )
 
