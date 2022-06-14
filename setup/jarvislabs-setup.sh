@@ -31,11 +31,8 @@ else
     chmod 600 ~/.kaggle/kaggle.json
 
     mkdir data
-    kaggle competitions download -c us-patent-phrase-to-phrase-matching
-    unzip us-patent-phrase-to-phrase-matching.zip -d data
-
-    kaggle datasets download -d yasufuminakama/cpc-data
-    unzip -q cpc-data.zip -d data
+    kaggle kernels output nbroad/uspppm-folds
+    unzip uspppm-folds.zip -d data
 fi
 
 FILE="wandb.txt"
