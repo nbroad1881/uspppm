@@ -124,7 +124,10 @@ class SaveCallback(TrainerCallback):
             kwargs["model"].config.update({f"best_{self.metric_name}": metric_value})
 
             if self.weights_only:
-                kwargs["model"].save_pretrained(args.output_dir)
+                if "COCO" in str(kwargs["model"].config.__class__):
+                    torch.save(kwargs["model"].state_dict(), os.path.join(args.output_dir, "pytorch_model.bin"))
+                else:
+                    kwargs["model"].save_pretrained(args.output_dir)
                 kwargs["model"].config.save_pretrained(args.output_dir)
                 kwargs["tokenizer"].save_pretrained(args.output_dir)
             else:
