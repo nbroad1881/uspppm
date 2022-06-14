@@ -134,7 +134,7 @@ class USPPPMModel(PreTrainedModel):
         )
 
     def _init_weights(self, module):
-        std = self.config.to_dict().get("initializer_range", 0.02)
+        std = getattr(self.config, "initializer_range", 0.02)
         """Initialize the weights"""
         if isinstance(module, nn.Sequential):
             for m in module.modules():
