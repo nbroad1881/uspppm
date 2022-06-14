@@ -49,6 +49,7 @@ class DataModule:
         train_df = pd.read_csv(self.data_dir / self.cfg["train_file"])
 
         train_df["context"] = train_df["title"]
+        train_df["section"] = train_df["section"].apply(lambda x: f"[{x[0]}]")
 
         if self.cfg["ignore_data"]:
             ignore = pd.read_csv(self.data_dir / "ignore.csv")
@@ -76,6 +77,11 @@ class DataModule:
                 for f in range(self.train_df.fold.max()+1)
             ]
 
+        if self.cfg["prompt"] == "section":
+            sections = ["B", "H", "G", "C", "A", "F", "E", "D" ]
+            new_tokens = [f"[{x}]" for x in sections]
+            self.tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
+
     def prepare_datasets(self, add_idx=False):
 
         if self.cfg["train_file"]:
@@ -102,6 +108,7 @@ class DataModule:
                 "label": self.train_df.score,
                 "context": self.train_df.context,
                 "fold": self.train_df.fold,
+                "section": self.train_df.section,
                 **id_col,
             }
         )
@@ -132,24 +139,33 @@ class DataModule:
 
         sep = self.tokenizer.sep_token
 
+        ctx = example["context"]
+        if self.cfg["lowercase"]:
+            ctx = ctx.lower()
+
         if self.cfg["prompt"] == "natural":
             prompt = [
-                f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{example['context']}'"
+                f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{ctx}'?"
             ]
 
         elif self.cfg["prompt"] == "token_type":
             prompt = [
                 example["anchor"],
-                example["target"] + sep + example["context"],
+                example["target"] + sep + ctx,
             ]
-        else:
+        elif self.cfg["prompt"] == "spaces":
+            prompt = [" ".join([example["anchor"], example["target"], ctx])]
+        elif self.cfg["prompt"] == "sep":
             prompt = (
-                example["anchor"] + sep + example["target"] + sep + example["context"]
+                example["anchor"] + sep + example["target"] + sep + ctx
             )
             prompt = [prompt]
-
-        if self.cfg["lowercase"]:
-            prompt = [p.lower().replace(sep.lower(), sep) for p in prompt]
+        elif self.cfg["prompt"] == "section":
+            sep = example["section"]
+            prompt = (
+                example["anchor"] + sep + example["target"] + sep + ctx
+            )
+            prompt = [prompt]
 
         tokenized = self.tokenizer(*prompt, padding=False)
         tokenized["label"] = example["label"]
