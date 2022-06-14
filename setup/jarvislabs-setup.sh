@@ -31,8 +31,7 @@ else
     chmod 600 ~/.kaggle/kaggle.json
 
     mkdir data
-    kaggle kernels output nbroad/uspppm-folds
-    unzip uspppm-folds.zip -d data
+    kaggle kernels output nbroad/uspppm-folds -p data
 fi
 
 FILE="wandb.txt"
