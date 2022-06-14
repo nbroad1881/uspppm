@@ -39,7 +39,10 @@ class USPPPMModel(PreTrainedModel):
         super().__init__(config)
         self.config = config
 
-        self.backbone = AutoModel.from_config(config)
+        if "COCO" in str(config.__class__):
+            self.backbone = COCOLMModel(config)
+        else:
+            self.backbone = AutoModel.from_config(config)
 
         self.classification_head = [ConcatHiddenStates(config.num_concat)]
         input_hidden_size = config.hidden_size * config.num_concat
@@ -102,7 +105,11 @@ class USPPPMModel(PreTrainedModel):
 
         for i, mod in enumerate(self.classification_head):
             if i == 0:
-                x = mod(outputs.hidden_states, attention_mask=attention_mask)
+                if "COCO" in str(self.config.__class__):
+                    hs = outputs[1]
+                else:
+                    hs = outputs.hidden_states
+                x = mod(hs, attention_mask=attention_mask)
             else:
                 x = mod(x, attention_mask=attention_mask)
 

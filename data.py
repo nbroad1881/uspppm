@@ -174,7 +174,11 @@ class DataModule:
             )
             prompt = [prompt]
 
-        tokenized = self.tokenizer(*prompt, padding=False)
+        if "cocolm" in self.cfg["model_name_or_path"]:
+            tokenized = self.tokenizer.encode_plus(*prompt)
+            tokenized["attention_mask"] = [0] + [1]*(len(tokenized["input_ids"])-2) + [0]
+        else:
+            tokenized = self.tokenizer(*prompt, padding=False)
         tokenized["label"] = example["label"]
         return tokenized
 

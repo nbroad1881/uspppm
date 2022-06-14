@@ -114,7 +114,12 @@ if __name__ == "__main__":
         )
 
         model = get_pretrained(model_config, cfg["model_name_or_path"])
-        model.backbone.resize_token_embeddings(len(dm.tokenizer))
+        if "cocolm" not in cfg["model_name_or_path"]:
+            model.backbone.resize_token_embeddings(len(dm.tokenizer))
+        else:
+            print("if resizing tokens, there will be errors")
+                                                
+                                                
 
         reinit_model_weights(model, cfg["reinit_layers"], model_config)
 
