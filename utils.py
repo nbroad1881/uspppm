@@ -77,11 +77,11 @@ def set_wandb_env_vars(cfg):
 def compute_metrics(eval_preds):
 
     (_, probas), labels = eval_preds
-    corr, _ = pearsonr(probas.squeeze(), labels)
+    score, _ = pearsonr(labels, probas.squeeze())
 
     return {
         "proba_mse": mean_squared_error(labels, probas.squeeze()),
-        "proba_pearson": corr,
+        "proba_pearson": score,
     }
 
 
@@ -146,12 +146,26 @@ def layerwise_learning_rate(model, lr=3e-5, wd=0.01, alpha=0.8):
     return optimizer_grouped_parameters
 
 
-def create_optimizer(model, train_args):
-    return bnb.optim.Adam8bit(
+def create_optimizer(model, train_args, use_8bit=True):
+
+    if use_8bit:
+        adam = bnb.optim.Adam8bit
+    else:
+        adam = bnb.optim.Adam32bit
+
+    opt = adam(
         uniform_learning_rate(model, train_args.learning_rate, train_args.weight_decay),
         betas=(train_args.adam_beta1, train_args.adam_beta2),
         eps=train_args.adam_epsilon,
     )
+
+    for module in model.modules():
+        if isinstance(module, torch.nn.Embedding):
+            bnb.optim.GlobalOptimManager.get_instance().register_module_override(
+                module, 'weight', {'optim_bits': 32}
+            )       
+    
+    return opt
 
 
 def create_scheduler(num_training_steps, optimizer, train_args, **kwargs):
@@ -197,7 +211,7 @@ def uniform_learning_rate(model, lr, wd=0.01):
                 if not any(nd in n for nd in no_decay)
             ],
             "weight_decay": wd,
-            "lr": lr*.8,
+            "lr": lr*.5,
         },
         {
             "params": [
@@ -206,12 +220,12 @@ def uniform_learning_rate(model, lr, wd=0.01):
                 if any(nd in n for nd in no_decay)
             ],
             "weight_decay": 0.0,
-            "lr": lr*.8,
+            "lr": lr*.5,
         },
         {
             "params": [p for n, p in model.named_parameters() if "backbone" not in n],
             "weight_decay": 0.0,
-            "lr": lr * 1.2,
+            "lr": lr * 1.5,
         },
     ]
 
