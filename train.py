@@ -106,6 +106,7 @@ if __name__ == "__main__":
         )
 
         model = get_pretrained(model_config, cfg["model_name_or_path"])
+        model.resize_token_embeddings(len(dm.tokenizer))
 
         reinit_model_weights(model, cfg["reinit_layers"], model_config)
 
