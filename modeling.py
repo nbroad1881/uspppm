@@ -67,7 +67,7 @@ class USPPPMModel(PreTrainedModel):
 
         self.dropout = nn.Dropout(config.output_dropout_prob)
         if config.multisample_dropout:
-            self.multisample_dropout = MultiSampleDropout(config.multisample_dropout)
+            self.multisample_dropout = MultiSampleDropout(config.multisample_dropout, "regression", 1)
 
         if config.output_layer_norm:
             self.ln = nn.LayerNorm(config.hidden_size)
@@ -117,19 +117,19 @@ class USPPPMModel(PreTrainedModel):
         if labels is not None:
 
             if self.config.multisample_dropout:
-                x = self.multisample_dropout(x)
+                loss, logits = self.multisample_dropout(x, self.classifier, labels, self.loss_fct)
             else:
                 x = self.dropout(x)
 
-            if self.config.output_layer_norm:
-                logits = self.classifier(self.ln(x))
-            else:
-                logits = self.classifier(x)
+                if self.config.output_layer_norm:
+                    logits = self.classifier(self.ln(x))
+                else:
+                    logits = self.classifier(x)
 
-            if self.config.loss == "mse":
-                loss = self.loss_fct(logits.sigmoid().view(-1), labels.view(-1))
-            elif self.config.loss == "bce":
-                loss = self.loss_fct(logits.view(-1), labels.view(-1))
+                if self.config.loss == "mse":
+                    loss = self.loss_fct(logits.sigmoid().view(-1), labels.view(-1))
+                elif self.config.loss == "bce":
+                    loss = self.loss_fct(logits.view(-1), labels.view(-1))
 
         else:
             if self.config.output_layer_norm:
@@ -289,12 +289,26 @@ class MeanMaxPoolHead(nn.Module):
 
 
 class MultiSampleDropout(nn.Module):
-    def __init__(self, dropout_probs) -> None:
+    def __init__(self, dropout_probs, problem_type, num_labels) -> None:
         super().__init__()
 
         self.dropouts = [nn.Dropout(p=p) for p in dropout_probs]
+        self.problem_type = problem_type
+        self.num_labels = num_labels
 
-    def forward(self, x):
-        return torch.mean(
-            torch.stack([dropout(x) for dropout in self.dropouts], dim=0), dim=0
-        )
+    def forward(self, hidden_states, linear, labels, loss_fn):
+        logits = [linear(d(hidden_states)) for d in self.dropouts]
+        if self.problem_type == "regression":
+            logits = [l.view(-1) for l in logits]
+            labels = labels.view(-1)
+            if "MSE" in str(loss_fn.__class__):
+                logits = [l.sigmoid() for l in logits]
+        elif self.problem_type == "single_label_classification":
+            logits = [l.view(-1, self.num_labels) for l in logits]
+            labels = labels.view(-1)
+        losses = [loss_fn(log, labels) for log in logits]
+
+        logits = torch.mean(torch.stack(logits, dim=0), dim=0)
+        loss = torch.mean(torch.stack(losses, dim=0), dim=0)
+
+        return (loss, logits)
