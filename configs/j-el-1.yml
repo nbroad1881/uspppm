@@ -28,7 +28,7 @@ train_file: "seed3.csv"
 
 # model
 model_name_or_path: "google/electra-large-discriminator"
-reinit_layers: 1
+reinit_layers: 5
 layer_norm_eps: 1e-7
 dropout: 0.2
 num_concat: 1
@@ -79,7 +79,7 @@ training_arguments:
 # training
   do_train: yes
   resume_from_checkpoint:
-  seed: 19
+  seed: 20
 
 # hyperparams
   per_device_train_batch_size: 8
