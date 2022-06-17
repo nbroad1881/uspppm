@@ -4,10 +4,12 @@ from dataclasses import dataclass
 
 import torch
 from torch import nn
+import numpy as np
 from transformers import (
     PreTrainedModel,
     PretrainedConfig,
     AutoModel,
+    AutoModelForSeq2SeqLM,
 )
 from transformers.utils import ModelOutput
 from cocolm.modeling_cocolm import COCOLMModel
@@ -312,3 +314,46 @@ class MultiSampleDropout(nn.Module):
         loss = torch.mean(torch.stack(losses, dim=0), dim=0)
 
         return (loss, logits)
+
+
+class Seq2SeqUSPPPMModel(PreTrainedModel):
+
+    def __init__(self, config, id2score, **kwargs):
+        self.backbone = AutoModelForSeq2SeqLM.from_config(config)
+        super().__init__(**kwargs)
+
+        self.id2score = id2score
+        self.ids = torch.tensor(list(id2score.keys()))
+
+
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        labels=None,
+    ):
+
+        if labels is not None:
+            outputs = self.backbone(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                labels=labels,
+                )
+            loss, preds = outputs.loss, outputs.logits
+        else:
+            loss = None
+
+            output = self.backbone.generate(
+                input_ids=input_ids,
+                return_dict_in_generate=True, 
+                output_scores=True,
+                min_length=2,
+                max_length=3,
+                )
+
+            id_scores = output.scores[1].index_select(-1, self.ids)
+            preds = id_scores.argmax(-1).squeeze()
+            preds = torch.tensor([self.id2score[x] for x in preds])
+
+        return (loss, preds, preds)
+

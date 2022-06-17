@@ -173,6 +173,18 @@ class DataModule:
                 example["anchor"] + sep + example["target"] + sep + ctx
             )
             prompt = [prompt]
+        elif self.cfg["prompt"] == "text-to-text":
+            prompt = [
+                f"compare: '{example['anchor']}' and '{example['target']}' given the context '{ctx}'. There is <extra_id_0> similarity."
+            ]
+            mapping = {
+                100: "▁maximum",
+                75: "▁very",
+                50: "▁some",
+                25: "▁little",
+                0: "▁no"
+            }
+            example["label"] = "<extra_id_0>"+mapping[int(example["label"]*100)]
 
         if "cocolm" in self.cfg["model_name_or_path"]:
             tokenized = self.tokenizer.encode_plus(*prompt)
