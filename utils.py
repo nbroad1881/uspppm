@@ -84,6 +84,20 @@ def compute_metrics(eval_preds):
         "proba_pearson": score,
     }
 
+def seq2seq_compute_metrics(eval_preds, mapping):
+    
+    (_, probas), labels = eval_preds
+    
+    label_ids = labels[:, 1].squeeze()
+    
+    labels = [mapping[id_] for id_ in label_ids]
+    
+    score, _ = pearsonr(labels, probas.squeeze())
+
+    return {
+        "proba_mse": mean_squared_error(labels, probas.squeeze()),
+        "proba_pearson": score,
+    }
 
 def reinit_model_weights(model, n_layers, config):
 

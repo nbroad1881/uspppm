@@ -324,11 +324,12 @@ class MultiSampleDropout(nn.Module):
 class Seq2SeqUSPPPMModel(PreTrainedModel):
 
     def __init__(self, config, id2score, **kwargs):
+        super().__init__(config)
         self.backbone = AutoModelForSeq2SeqLM.from_config(config)
-        super().__init__(**kwargs)
 
         self.id2score = id2score
         self.ids = torch.tensor(list(id2score.keys()))
+        self.scores = list(id2score.values())
 
 
     def forward(
@@ -344,7 +345,11 @@ class Seq2SeqUSPPPMModel(PreTrainedModel):
                 attention_mask=attention_mask,
                 labels=labels,
                 )
-            loss, preds = outputs.loss, outputs.logits
+
+            loss, logits = outputs.loss, outputs.logits[:, 1, :]
+            preds = logits.index_select(-1, self.ids.to(input_ids.device))
+            preds = preds.argmax(-1).squeeze()
+            preds = torch.tensor([self.scores[x] for x in preds.detach().cpu().tolist()])
         else:
             loss = None
 
@@ -352,13 +357,13 @@ class Seq2SeqUSPPPMModel(PreTrainedModel):
                 input_ids=input_ids,
                 return_dict_in_generate=True, 
                 output_scores=True,
-                min_length=2,
+                min_length=3,
                 max_length=3,
                 )
-
-            id_scores = output.scores[1].index_select(-1, self.ids)
+            logits = None
+            id_scores = output.scores[1].index_select(-1, self.ids.to(input_ids.device))
             preds = id_scores.argmax(-1).squeeze()
-            preds = torch.tensor([self.id2score[x] for x in preds])
+            preds = torch.tensor([self.id2score[x] for x in preds.detach().cpu().tolist()])
 
-        return (loss, preds, preds)
+        return (loss, logits, preds)
 

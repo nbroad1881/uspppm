@@ -144,7 +144,8 @@ class DataModule:
 
     def tokenize(self, example):
 
-        sep = self.tokenizer.sep_token
+        if not self.cfg["prompt"] == "text-to-text":
+            sep = self.tokenizer.sep_token
 
         ctx = example["context"]
         if self.cfg["lowercase"]:
@@ -184,7 +185,7 @@ class DataModule:
                 25: "▁little",
                 0: "▁no"
             }
-            example["label"] = "<extra_id_0>"+mapping[int(example["label"]*100)]
+            example["label"] = self.tokenizer("<extra_id_0>"+mapping[int(example["label"]*100)]).input_ids
 
         if "cocolm" in self.cfg["model_name_or_path"]:
             tokenized = self.tokenizer.encode_plus(*prompt)

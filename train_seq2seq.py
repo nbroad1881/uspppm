@@ -1,6 +1,7 @@
 import os
 import datetime
 import argparse
+from functools import partial
 
 import wandb
 import torch
@@ -20,7 +21,7 @@ from utils import (
     get_configs,
     set_wandb_env_vars,
     reinit_model_weights,
-    compute_metrics,
+    seq2seq_compute_metrics,
     create_optimizer,
     create_scheduler,
     push_to_hub,
@@ -105,8 +106,23 @@ if __name__ == "__main__":
                 "run_start": str(datetime.datetime.utcnow()),
             }
         )
+        
+        # ▁maximum 2411
+        # ▁very 182
+        # ▁some 128
+        # ▁little 385
+        # ▁no 150
+        mapping = {
+                2411: 1.0,
+                182: 0.75,
+                128: 0.5,
+                385: 0.25,
+                150: 0.0,
+            }
+        
+        compute_metrics = partial(seq2seq_compute_metrics, mapping=mapping)
 
-        model = Seq2SeqUSPPPMModel(model_config)
+        model = Seq2SeqUSPPPMModel(model_config, id2score=mapping)
         model.backbone = AutoModelForSeq2SeqLM.from_pretrained(cfg["model_name_or_path"])
 
         optimizer = create_optimizer(model, args)
