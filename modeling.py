@@ -76,9 +76,9 @@ class USPPPMModel(PreTrainedModel):
             self._init_weights(self.ln)
 
         self.classifier = nn.Linear(input_hidden_size, 1)
-
         self._init_weights(self.classifier)
-        for mod in self.classification_head:
+
+        for mod in self.classification_head.modules():
             self._init_weights(mod)
 
         if config.loss == "mse":
@@ -149,9 +149,6 @@ class USPPPMModel(PreTrainedModel):
     def _init_weights(self, module):
         std = getattr(self.config, "initializer_range", 0.02)
         """Initialize the weights"""
-        if isinstance(module, nn.Sequential):
-            for m in module.modules():
-                self._init_weights(m)
         if isinstance(module, nn.Linear):
             module.weight.data.normal_(mean=0.0, std=std)
             if module.bias is not None:
