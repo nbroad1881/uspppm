@@ -117,7 +117,10 @@ class USPPPMModel(PreTrainedModel):
         if labels is not None:
 
             if self.config.multisample_dropout:
-                loss, logits = self.multisample_dropout(x, self.classifier, labels, self.loss_fct)
+                layer_nm = None
+                if self.config.output_layer_norm:
+                    layer_nm = self.ln
+                loss, logits = self.multisample_dropout(x, self.classifier, labels, self.loss_fct, layer_nm)
             else:
                 x = self.dropout(x)
 
@@ -296,8 +299,10 @@ class MultiSampleDropout(nn.Module):
         self.problem_type = problem_type
         self.num_labels = num_labels
 
-    def forward(self, hidden_states, linear, labels, loss_fn):
-        logits = [linear(d(hidden_states)) for d in self.dropouts]
+    def forward(self, hidden_states, linear, labels, loss_fn, layer_nm=None):
+        if layer_nm is None:
+            layer_nm = nn.Identity()
+        logits = [linear(layer_nm(d(hidden_states))) for d in self.dropouts]
         if self.problem_type == "regression":
             logits = [l.view(-1) for l in logits]
             labels = labels.view(-1)
