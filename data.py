@@ -12,7 +12,7 @@ from sklearn.model_selection import (
     KFold,
 )
 from transformers import AutoTokenizer
-from datasets import Dataset
+from datasets import Dataset, disable_progress_bar
 
 from cocolm.tokenization_cocolm import COCOLMTokenizer
 
@@ -125,11 +125,14 @@ class DataModule:
         if add_idx:
             remove_columns.remove("idx")
 
+        disable_progress_bar()
+
         self.dataset = self.raw_ds.map(
             self.tokenize,
             batched=False,
             remove_columns=remove_columns,
             num_proc=self.cfg["num_proc"],
+
         )
 
     def get_train_dataset(self, fold):
@@ -187,6 +190,8 @@ class DataModule:
             }
             example["label"] = self.tokenizer("<extra_id_0>"+mapping[int(example["label"]*100)]).input_ids
 
+        if self.cfg["no-semicolon"]:
+            prompt = [p.replace(";", "") for p in prompt]
         if "cocolm" in self.cfg["model_name_or_path"]:
             tokenized = self.tokenizer.encode_plus(*prompt)
             tokenized["attention_mask"] = [0] + [1]*(len(tokenized["input_ids"])-2) + [0]

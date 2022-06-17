@@ -72,7 +72,7 @@ class USPPPMModel(PreTrainedModel):
             self.multisample_dropout = MultiSampleDropout(config.multisample_dropout, "regression", 1)
 
         if config.output_layer_norm:
-            self.ln = nn.LayerNorm(config.hidden_size)
+            self.ln = nn.LayerNorm(input_hidden_size)
             self._init_weights(self.ln)
 
         self.classifier = nn.Linear(input_hidden_size, 1)
