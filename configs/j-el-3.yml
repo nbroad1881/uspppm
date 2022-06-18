@@ -29,7 +29,7 @@ no-semicolon: yes
 
 # model
 model_name_or_path: "google/electra-large-discriminator"
-reinit_layers: 4
+reinit_layers: 3
 layer_norm_eps: 1e-7
 dropout: 0.2
 num_concat: 1
@@ -80,14 +80,14 @@ training_arguments:
 # training
   do_train: yes
   resume_from_checkpoint:
-  seed: 24
+  seed: 22
 
 # hyperparams
   per_device_train_batch_size: 32
   gradient_accumulation_steps: 1
   gradient_checkpointing: no
   group_by_length: no
-  learning_rate: 2e-5
+  learning_rate: 2.5e-5
   weight_decay: .01
 
 # schedule + steps

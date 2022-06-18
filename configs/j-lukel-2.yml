@@ -25,6 +25,7 @@ detailed_cpc: yes
 prompt: "natural"
 ignore_data: no
 train_file: "seed3.csv"
+no-semicolon: no
 
 # model
 model_name_or_path: "studio-ousia/luke-large"
@@ -83,15 +84,15 @@ training_arguments:
   seed: 18
 
 # hyperparams
-  per_device_train_batch_size: 96
+  per_device_train_batch_size: 32
   gradient_accumulation_steps: 1
   gradient_checkpointing: no
   group_by_length: no
-  learning_rate: 9e-5
+  learning_rate: 3e-5
   weight_decay: .01
 
 # schedule + steps
-  num_train_epochs: 10
+  num_train_epochs: 5
   lr_scheduler_type: cosine
   warmup_ratio: 0.1
   warmup_steps: 0
