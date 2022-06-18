@@ -91,7 +91,7 @@ training_arguments:
   weight_decay: .01
 
 # schedule + steps
-  num_train_epochs: 6
+  num_train_epochs: 5
   lr_scheduler_type: cosine
   warmup_ratio: 0.1
   warmup_steps: 0
