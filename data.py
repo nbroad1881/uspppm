@@ -95,11 +95,6 @@ class DataModule:
             new_tokens = [f"[{x}]" for x in sections]
             self.tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
 
-        if self.cfg["prompt"] == "detailed":
-            details = pd.read_csv(self.data_dir/"detailed-context.csv")
-            self.train_df = self.train_df.merge(details, on="context")
-            self.train_df["context"] = self.train_df["details"]
-
     def prepare_datasets(self, add_idx=False):
 
         if self.cfg["train_file"]:
