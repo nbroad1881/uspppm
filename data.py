@@ -49,9 +49,15 @@ class DataModule:
         self.data_dir = Path(self.cfg["data_dir"])
 
         train_df = pd.read_csv(self.data_dir / self.cfg["train_file"])
-
-        train_df["context"] = train_df["title"]
         train_df["section"] = train_df["context"].apply(lambda x: f"[{x[0]}]")
+        
+        if self.cfg["prompt"] == "detailed":
+            details = pd.read_csv(self.data_dir/"detailed-context.csv")
+            train_df = train_df.merge(details, on="context")
+            train_df["context"] = train_df["details"]
+        else:
+            train_df["context"] = train_df["title"]
+        
 
         if self.cfg["ignore_data"]:
             ignore = pd.read_csv(self.data_dir / "ignore.csv")
@@ -164,7 +170,7 @@ class DataModule:
                 f"How similar is '{example['anchor']}' compared to '{example['target']}' given the context '{ctx}'?"
             ]
 
-        elif self.cfg["prompt"] == "token_type":
+        elif self.cfg["prompt"] == "token_type" or self.cfg["prompt"] == "detailed":
             prompt = [
                 example["anchor"],
                 example["target"] + sep + ctx,
@@ -201,7 +207,7 @@ class DataModule:
             tokenized = self.tokenizer.encode_plus(*prompt)
             tokenized["attention_mask"] = [0] + [1]*(len(tokenized["input_ids"])-2) + [0]
         else:
-            tokenized = self.tokenizer(*prompt, padding=False)
+            tokenized = self.tokenizer(*prompt, padding=False, truncation="only_second", max_length=self.cfg["max_seq_length"])
         tokenized["label"] = example["label"]
         return tokenized
 
