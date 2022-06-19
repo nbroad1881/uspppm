@@ -22,8 +22,8 @@ lowercase: yes
 stratify_on: "score"
 fold_groups: "anchor"
 detailed_cpc: yes
-prompt: "detailed"
-ignore_data: no
+prompt: "natural"
+ignore_data: yes
 train_file: "seed18.csv"
 no-semicolon: yes
 
@@ -84,11 +84,11 @@ training_arguments:
   seed: 18
 
 # hyperparams
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 2
+  per_device_train_batch_size: 32
+  gradient_accumulation_steps: 1
   gradient_checkpointing: no
-  group_by_length: yes
-  learning_rate: 1e-5
+  group_by_length: no
+  learning_rate: 3e-5
   weight_decay: .01
 
 # schedule + steps

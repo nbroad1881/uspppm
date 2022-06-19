@@ -22,10 +22,11 @@ lowercase: yes
 stratify_on: "score"
 fold_groups: "anchor"
 detailed_cpc: yes
-prompt: "detailed"
+prompt: "section"
 ignore_data: no
-train_file: "seed18.csv"
+train_file: "50f_seed18.csv"
 no-semicolon: yes
+pad_multiple: 8
 
 # model
 model_name_or_path: "anferico/bert-for-patents"
@@ -84,17 +85,17 @@ training_arguments:
   seed: 18
 
 # hyperparams
-  per_device_train_batch_size: 4
-  gradient_accumulation_steps: 2
+  per_device_train_batch_size: 256
+  gradient_accumulation_steps: 1
   gradient_checkpointing: no
   group_by_length: yes
-  learning_rate: 1e-5
+  learning_rate: 1e-4
   weight_decay: .01
 
 # schedule + steps
   num_train_epochs: 5
   lr_scheduler_type: cosine
-  warmup_ratio: 0.1
+  warmup_ratio: 0.2
   warmup_steps: 0
   max_steps: -1
 

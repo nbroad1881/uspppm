@@ -1,10 +1,10 @@
 # RunArguments
 DEBUG: no
 n_gpu: 1
-num_proc: 4
+num_proc: 7
 
 
-min_score_to_save: 0.80
+min_score_to_save: 0.8
 loss: 'mse'
 use_8bit: yes
 use_layerwise_lr: no
@@ -14,7 +14,7 @@ use_sift: no
 
 # data
 k_folds: 5
-max_seq_length: 512
+max_seq_length: 1024
 padding: no
 stride: 0
 data_dir: "./data"
@@ -24,16 +24,18 @@ fold_groups: "anchor"
 detailed_cpc: yes
 prompt: "detailed"
 ignore_data: no
-train_file: "seed18.csv"
+train_file: "20f_seed18.csv"
 no-semicolon: yes
+pad_multiple: 512
 
 # model
-model_name_or_path: "anferico/bert-for-patents"
+model_name_or_path: "allenai/longformer-large-4096"
 reinit_layers: 0
 layer_norm_eps: 1e-7
 dropout: 0.2
 num_concat: 1
 pooling: "attn"
+output_hidden_dim: 512
 multisample_dropout: 
   - 0.5
   - 0.5
@@ -43,8 +45,7 @@ multisample_dropout:
   - 0.5
   - 0.5
   - 0.5
-output_hidden_dim: 512
-output_layer_norm: yes
+output_layer_norm: no
 
 # swa
 use_swa: no
@@ -62,7 +63,6 @@ entity: kisholas
 group: exp-1
 tags:
   - "natural language"
-  - "no leak"
 notes: >
   
 job_type: train
@@ -84,7 +84,7 @@ training_arguments:
   seed: 18
 
 # hyperparams
-  per_device_train_batch_size: 4
+  per_device_train_batch_size: 8
   gradient_accumulation_steps: 2
   gradient_checkpointing: no
   group_by_length: yes
@@ -113,7 +113,7 @@ training_arguments:
   logging_dir: <default>
   logging_strategy: steps
   logging_first_step: no
-  logging_steps: 100
+  logging_steps: 50
   logging_nan_inf_filter: <default>
 
 # dtype
@@ -137,7 +137,7 @@ training_arguments:
   evaluation_strategy: "epoch"
   eval_steps: 500
   eval_delay: 0
-  per_device_eval_batch_size: 128
+  per_device_eval_batch_size: 32
   do_predict:
   
 # hub
