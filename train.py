@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     dm.prepare_datasets()
 
-    for fold in range(1, cfg["k_folds"]):
+    for fold in range(3):
 
         cfg, args = get_configs(config_file)
         cfg["fold"] = fold
@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
         print(
             "Decode inputs from train_dataset",
-            dm.tokenizer.decode(train_dataset[0]["input_ids"]),
+            dm.tokenizer.convert_ids_to_tokens(train_dataset[0]["input_ids"]),
         )
 
         if "cocolm" in cfg["model_name_or_path"]:
@@ -100,6 +100,8 @@ if __name__ == "__main__":
             {
                 "num_labels": 1,
                 "output_dropout_prob": cfg["dropout"],
+                # "attention_probs_dropout_prob": 0.0,
+                # "hidden_dropout_prob": 0.0,
                 "num_concat": cfg["num_concat"],
                 "pooling": cfg["pooling"],
                 "multisample_dropout": cfg["multisample_dropout"],
@@ -135,7 +137,7 @@ if __name__ == "__main__":
 
         scheduler = create_scheduler(num_training_steps, optimizer, args)
 
-        collator = DataCollatorWithPadding(tokenizer=dm.tokenizer, pad_to_multiple_of=8)
+        collator = DataCollatorWithPadding(tokenizer=dm.tokenizer, pad_to_multiple_of=cfg["pad_multiple"])
 
         trainer = Trainer(
             model=model,
