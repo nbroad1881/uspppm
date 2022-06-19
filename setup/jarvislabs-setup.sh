@@ -32,6 +32,7 @@ else
 
     mkdir data
     kaggle kernels output nbroad/uspppm-folds -p data
+    kaggle kernels output nbroad/cpc-titles-explore -p data
 fi
 
 FILE="wandb.txt"
